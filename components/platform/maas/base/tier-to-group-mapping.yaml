@@ -39,3 +39,11 @@ data:
         - tier-enterprise-users
         - enterprise-group
         - admin-group
+
+    # Example from doco: https://opendatahub-io.github.io/maas-billing/latest/configuration-and-management/tier-configuration/
+    # Add this tier entry to the end of the tiers list:
+    - name: stier
+      description: S tier user
+      level: 99
+      groups:
+      - fox
