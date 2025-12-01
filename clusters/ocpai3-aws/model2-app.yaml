@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: model-simulator-2
   namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
   labels:
     app.kubernetes.io/part-of: platform
   annotations:
@@ -17,13 +19,11 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: llm
-  labels:
-    app.kubernetes.io/part-of: platform
   syncPolicy:
     # Manual sync - changes require manual sync from Argo CD UI/CLI
     syncOptions:
-      # Let Argo create the target namespace for MinIO.
-      - CreateNamespace=false
+      - CreateNamespace=true
       # Optional but useful in day-2:
       - ApplyOutOfSyncOnly=true
+  preserveResourcesOnDeletion: false
   revisionHistoryLimit: 5
