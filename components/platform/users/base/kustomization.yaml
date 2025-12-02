@@ -9,3 +9,4 @@ kind: Kustomization
 resources:
   - htpass-secret.yaml
   - cluster.yaml
+  - users-and-groups.yaml
