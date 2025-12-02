@@ -22,7 +22,7 @@ apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
   name: tier-free-users
-users: []
+users: [bryonbaker]
 
 ---
 
@@ -30,7 +30,7 @@ apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
   name: tier-premium-users
-users: []
+users: [user1, user2]
 
 ---
 
