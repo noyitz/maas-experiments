@@ -8,7 +8,7 @@ metadata:
   namespace: llm
 spec:
   model:
-    name: public-model-1
+    name: facebook/opt-125m
     uri: hf://facebook/opt-125m
   replicas: 1
   router:

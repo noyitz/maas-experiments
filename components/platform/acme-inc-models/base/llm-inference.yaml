@@ -8,7 +8,7 @@ metadata:
   namespace: acme-inc-models
 spec:
   model:
-    name: acme-inc-model-1
+    name: facebook/opt-125m
     uri: hf://facebook/opt-125m
   replicas: 1
   router:
