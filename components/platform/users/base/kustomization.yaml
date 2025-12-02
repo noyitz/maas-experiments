@@ -1,0 +1,11 @@
+# users/base/kustomization.yaml
+# This kustomization file defines the base configuration for the users component.
+# It includes the github oauth configuration and htpass-secret and cluster configuration.
+#
+# NOTE: The oauth secret is not included because it should not be checked into github. This needs to be manually created.
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - htpass-secret.yaml
+  - cluster.yaml
