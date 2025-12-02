@@ -30,7 +30,7 @@ apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
   name: tier-premium-users
-users: [user1, user2]
+users: [user1]
 
 ---
 
@@ -40,3 +40,20 @@ metadata:
   name: tier-enterprise-users
 users: []
 
+---
+
+# Define groups for developers in Acme Inc
+
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: acme-dev-users
+users: [bryonbaker]
+
+---
+
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: acme-prod-users
+users: [bryonbaker, user2]
