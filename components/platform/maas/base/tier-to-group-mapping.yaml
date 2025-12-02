@@ -37,10 +37,9 @@ data:
       groups:
         - tier-enterprise-users
 
-    # Example from doco: https://opendatahub-io.github.io/maas-billing/latest/configuration-and-management/tier-configuration/
-    # Add this tier entry to the end of the tiers list:
-    - name: tier
-      description: S tier user
+    # This is an example of namespacing a tier to implement an tier for a specific company.
+    - name: acme-tier
+      description: Tier used for users with access to the Acme Inc series of models
       level: 99
       groups:
-      - fox
+      - acme-tier-users
