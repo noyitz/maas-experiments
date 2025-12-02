@@ -15,10 +15,10 @@ spec:
   source:
     repoURL: 'https://github.com/bryonbaker/maas-experiments'
     targetRevision: main
-    path: components/platform/model2/base
+    path: components/platform/acme-inc-models/base
   destination:
     server: https://kubernetes.default.svc
-    namespace: llm
+    namespace: acme-inc-models
   syncPolicy:
     # Manual sync - changes require manual sync from Argo CD UI/CLI
     syncOptions:
