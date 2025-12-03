@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - tier-to-group-mapping.yaml
-  - token-rate-policy.yaml
+  - token-rate-limit-policy.yaml
+  - request-rate-limit-policy.yaml
