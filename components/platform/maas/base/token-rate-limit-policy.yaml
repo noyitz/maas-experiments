@@ -1,8 +1,11 @@
+# Need to resynch the policy after change
+# https://opendatahub-io.github.io/maas-billing/latest/configuration-and-management/tier-configuration/
+
 apiVersion: kuadrant.io/v1alpha1
 kind: TokenRateLimitPolicy
 metadata:
-name: gateway-token-rate-limits
-namespace: openshift-ingress
+  name: gateway-token-rate-limits
+  namespace: openshift-ingress
 spec:
   limits:
     enterprise-user-tokens:
