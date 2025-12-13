@@ -28,7 +28,7 @@ This document provides example curl commands for testing the Tier-to-Group Admin
 
 ## Example Commands
 
-### 1. Create a Free Tier
+### 1. Create a Free Tier with no Groups
 
 ```bash
 curl -X POST ${BASE_URL}/api/v1/tiers \
@@ -36,8 +36,7 @@ curl -X POST ${BASE_URL}/api/v1/tiers \
   -d '{
     "name": "free",
     "description": "Free tier for basic users",
-    "level": 1,
-    "groups": ["system:authenticated"]
+    "level": 1
   }'
 ```
 
@@ -46,8 +45,7 @@ Expected response (201 Created):
 {
   "name": "free",
   "description": "Free tier for basic users",
-  "level": 1,
-  "groups": ["system:authenticated"]
+  "level": 1
 }
 ```
 
@@ -64,16 +62,16 @@ curl -X POST ${BASE_URL}/api/v1/tiers \
   }'
 ```
 
-### 3. Create an Enterprise Tier
+### 3. Create a Tier for Acme Inc's Prod-Users team
 
 ```bash
 curl -X POST ${BASE_URL}/api/v1/tiers \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "enterprise",
-    "description": "Enterprise tier",
+    "name": "acme-inc",
+    "description": "Tier for Acme Inc's models",
     "level": 20,
-    "groups": ["enterprise-users"]
+    "groups": ["acme-prod-users"]
   }'
 ```
 
@@ -90,7 +88,7 @@ Expected response (200 OK):
     "name": "free",
     "description": "Free tier for basic users",
     "level": 1,
-    "groups": ["system:authenticated"]
+    "groups": []
   },
   {
     "name": "premium",
@@ -99,10 +97,10 @@ Expected response (200 OK):
     "groups": ["premium-users"]
   },
   {
-    "name": "enterprise",
-    "description": "Enterprise tier",
+    "name": "acme-inc",
+    "description": "Tier for Acme Inc's models",
     "level": 20,
-    "groups": ["enterprise-users"]
+    "groups": ["acme-prod-users"]
   }
 ]
 ```
@@ -142,11 +140,13 @@ Note: The `groups` field is optional. If not provided, it remains unchanged.
 curl -X PUT ${BASE_URL}/api/v1/tiers/free \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "Free tier for basic users",
+    "description": "Trial users to free tier",
     "level": 1,
-    "groups": ["system:authenticated", "free-users", "trial-users"]
+    "groups": ["trial-users"]
   }'
 ```
+
+Note: This command is additive. It does not impact existing groups assigned to a Tier.
 
 ### 8. Update a Tier (Remove Groups)
 
