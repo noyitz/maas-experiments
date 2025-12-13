@@ -6,3 +6,4 @@ client-example/golang-client/bin/ocp-lister
 client-example/tier-to-group-admin/tier-to-group-admin.code-workspace
 client-example/tier-to-group-admin/PLAN.md
 client-example/tier-to-group-admin/DEPLOYMENT_PLAN.md
+client-example/tier-to-group-admin/.vscode/launch.json
