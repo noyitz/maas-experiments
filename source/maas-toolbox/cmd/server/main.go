@@ -1,3 +1,17 @@
+// Copyright 2025 Bryon Baker
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -11,14 +25,14 @@ import (
 	"tier-to-group-admin/internal/storage"
 )
 
-// @title           Tier-to-Group Admin API
+// @title           Open Data Hub MaaS Toolbox API
 // @version         1.0
 // @description     REST API service for managing tier-to-group mappings in the Open Data Hub Model as a Service (MaaS) project.
 // @description     This API provides CRUD operations for managing tiers that map Kubernetes groups to user-defined subscription tiers.
 
-// @contact.name   API Support
-// @contact.url    https://github.com/opendatahub-io/maas-billing
-// @contact.email  support@example.com
+// @contact.name   Bryon Baker
+// @contact.url    https://github.com/bryonbaker
+// @contact.email  bryonbakeraus@gmail.com
 
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
@@ -26,11 +40,11 @@ import (
 // @host      localhost:8080
 // @BasePath  /api/v1
 
-// @schemes   http https
+// @schemes   https
 
 func init() {
 	// Initialize Swagger docs
-	docs.SwaggerInfo.Title = "Tier-to-Group Admin API"
+	docs.SwaggerInfo.Title = "Open Data Hub Maas Toolbox API"
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Description = "REST API service for managing tier-to-group mappings in the Open Data Hub Model as a Service (MaaS) project."
 	docs.SwaggerInfo.BasePath = "/api/v1"
