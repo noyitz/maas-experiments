@@ -1,7 +1,14 @@
-.PHONY: clean build push test test-verbose test-coverage run-local
+.PHONY: clean build push test test-verbose test-coverage run-local swagger
+
+# Generate Swagger documentation
+swagger:
+	@echo "Generating Swagger documentation..."
+	@go install github.com/swaggo/swag/cmd/swag@latest
+	@swag init -g cmd/server/main.go -o docs 2>&1 | grep -v "warning: failed to get package name" || true
+	@echo "Swagger documentation generated in docs/"
 
 # Build container image
-build:
+build: swagger
 	@echo "Building container image with podman..."
 	@podman build -t maas-toolbox:latest .
 	@echo "Container image built: maas-toolbox:latest"
