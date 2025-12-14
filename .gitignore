@@ -1,2 +1,2 @@
 *.code-workspace
-source/maas-toolbox/.vscode/launch.json
+launch.json
