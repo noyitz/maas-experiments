@@ -34,6 +34,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// SystemAuthenticatedGroup is the special built-in Kubernetes group that
+// always exists but is not returned by the API, so it requires special handling.
+const SystemAuthenticatedGroup = "system:authenticated"
+
 // K8sTierStorage implements TierStorage using Kubernetes ConfigMap
 type K8sTierStorage struct {
 	Client    kubernetes.Interface
@@ -177,12 +181,12 @@ func getRESTConfig() (*rest.Config, error) {
 	return config, nil
 }
 
-// GroupExists checks if a Group exists in the OpenShift cluster
-// Groups are cluster-scoped resources in the user.openshift.io/v1 API group
+// GroupExists checks if a Group exists in the OpenShift cluster.
+// Groups are cluster-scoped resources in the user.openshift.io/v1 API group.
+// Note: system:authenticated is a special built-in Kubernetes group that
+// always exists but is not returned by the API, so it's handled as a special case.
 func (k *K8sTierStorage) GroupExists(groupName string) (bool, error) {
-	// Need to handle the special case of "system:authenticated" being a
-	// hard-coded group in Kubernetes that is not returned in a list of cluster groups.
-	if groupName == "system:authenticated" {
+	if groupName == SystemAuthenticatedGroup {
 		return true, nil
 	}
 
