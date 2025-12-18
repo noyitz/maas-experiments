@@ -62,6 +62,7 @@ print_menu() {
     echo "5. Get MaaS Authentication Token"
     echo "6. List Models (MaaS API)"
     echo "7. Query Model Inference Endpoint"
+    echo "8. Deploy Group Rate Limit Policies"
     echo "X. Exit"
     echo ""
     echo -e "${BLUE}========================================${NC}"
@@ -411,6 +412,217 @@ query_model_inference_demo() {
     echo ""
 }
 
+deploy_group_rate_limit_policies_demo() {
+    echo ""
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}DEPLOY GROUP RATE LIMIT POLICIES${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}Description:${NC}"
+    echo "Deploys a complete group rate limiting setup including:"
+    echo "• Tier-to-group mapping (ConfigMap)"
+    echo "• Request rate limit policy (RateLimitPolicy)"
+    echo "• Token rate limit policy (TokenRateLimitPolicy)"
+    echo ""
+    echo -e "${YELLOW}Prerequisites:${NC}"
+    echo "1. OpenShift cluster with Kuadrant installed"
+    echo "2. maas-default-gateway deployed in openshift-ingress namespace"
+    echo "3. Cluster admin permissions"
+    echo ""
+    echo ""
+    
+    # Step 1: Tier-to-Group Mapping
+    local tier_mapping_cmd="curl -X POST \\\\
+  -H \"Authorization: Bearer \$(oc whoami -t)\" \\\\
+  -H \"Content-Type: application/json\" \\\\
+  -H \"Accept: application/json\" \\\\
+  -k \\\\
+  \"\$OPENSHIFT_SERVER/api/v1/namespaces/maas-api/configmaps\" \\\\
+  -d '{
+    \"apiVersion\": \"v1\",
+    \"kind\": \"ConfigMap\",
+    \"metadata\": {
+      \"name\": \"tier-to-group-mapping\",
+      \"namespace\": \"maas-api\",
+      \"labels\": {
+        \"app\": \"maas-api\",
+        \"app.kubernetes.io/component\": \"api\",
+        \"app.kubernetes.io/name\": \"maas-api\",
+        \"app.kubernetes.io/part-of\": \"model-as-a-service\",
+        \"component\": \"tier-mapping\"
+      }
+    },
+    \"data\": {
+      \"tiers\": \"# Group tier configuration\\\\n- name: <GROUP_NAME>-<TIER_LEVEL>-tier\\\\n  description: Tier for <GROUP_NAME> <TIER_LEVEL> users\\\\n  level: <TIER_PRIORITY>\\\\n  groups:\\\\n  - tier-<GROUP_NAME>-<TIER_LEVEL>\\\\n\"
+    }
+  }'"
+  
+    print_curl_command \
+        "STEP 1: CREATE TIER-TO-GROUP MAPPING" \
+        "Creates a ConfigMap that maps group tiers to user groups. Replace placeholders with actual values." \
+        "$tier_mapping_cmd"
+    
+    echo -e "${YELLOW}Required placeholders:${NC}"
+    echo "• <GROUP_NAME>: Group identifier (e.g., 'acme', 'redhat')"
+    echo "• <TIER_LEVEL>: Tier level (e.g., 'dev', 'prod', 'enterprise')"
+    echo "• <TIER_PRIORITY>: Numeric priority (10=dev, 20=prod, 30=enterprise)"
+    echo ""
+    
+    # Step 2: Request Rate Limit Policy
+    local rate_limit_cmd="curl -X POST \\\\
+  -H \"Authorization: Bearer \$(oc whoami -t)\" \\\\
+  -H \"Content-Type: application/json\" \\\\
+  -H \"Accept: application/json\" \\\\
+  -k \\\\
+  \"\$OPENSHIFT_SERVER/apis/kuadrant.io/v1/namespaces/openshift-ingress/ratelimitpolicies\" \\\\
+  -d '{
+    \"apiVersion\": \"kuadrant.io/v1\",
+    \"kind\": \"RateLimitPolicy\",
+    \"metadata\": {
+      \"name\": \"<GROUP_NAME>-rate-limits\",
+      \"namespace\": \"openshift-ingress\"
+    },
+    \"spec\": {
+      \"targetRef\": {
+        \"group\": \"gateway.networking.k8s.io\",
+        \"kind\": \"Gateway\",
+        \"name\": \"maas-default-gateway\"
+      },
+      \"limits\": {
+        \"<GROUP_NAME>-<TIER_LEVEL>\": {
+          \"rates\": [
+            {
+              \"limit\": <REQUESTS_PER_WINDOW>,
+              \"window\": \"<TIME_WINDOW>\"
+            }
+          ],
+          \"when\": [
+            {
+              \"predicate\": \"auth.identity.tier == \\\\\"<GROUP_NAME>-<TIER_LEVEL>-tier\\\\\"\"
+            }
+          ],
+          \"counters\": [
+            {
+              \"expression\": \"auth.identity.userid\"
+            }
+          ]
+        }
+      }
+    }
+  }'"
+    
+    print_curl_command \
+        "STEP 2: CREATE REQUEST RATE LIMIT POLICY" \
+        "Creates a RateLimitPolicy that limits requests per time window for the group tier" \
+        "$rate_limit_cmd"
+    
+    echo -e "${YELLOW}Additional placeholders:${NC}"
+    echo "• <REQUESTS_PER_WINDOW>: Number of requests allowed (e.g., 5, 20, 50)"
+    echo "• <TIME_WINDOW>: Time window (e.g., '1m', '2m', '5m')"
+    echo ""
+    
+    # Step 3: Token Rate Limit Policy
+    local token_rate_limit_cmd="curl -X POST \\\\
+  -H \"Authorization: Bearer \$(oc whoami -t)\" \\\\
+  -H \"Content-Type: application/json\" \\\\
+  -H \"Accept: application/json\" \\\\
+  -k \\\\
+  \"\$OPENSHIFT_SERVER/apis/kuadrant.io/v1alpha1/namespaces/openshift-ingress/tokenratelimitpolicies\" \\\\
+  -d '{
+    \"apiVersion\": \"kuadrant.io/v1alpha1\",
+    \"kind\": \"TokenRateLimitPolicy\",
+    \"metadata\": {
+      \"name\": \"<GROUP_NAME>-token-rate-limits\",
+      \"namespace\": \"openshift-ingress\"
+    },
+    \"spec\": {
+      \"targetRef\": {
+        \"group\": \"gateway.networking.k8s.io\",
+        \"kind\": \"Gateway\",
+        \"name\": \"maas-default-gateway\"
+      },
+      \"limits\": {
+        \"<GROUP_NAME>-<TIER_LEVEL>-user-tokens\": {
+          \"counters\": [
+            {
+              \"expression\": \"auth.identity.userid\"
+            }
+          ],
+          \"rates\": [
+            {
+              \"limit\": <TOKENS_PER_WINDOW>,
+              \"window\": \"<TOKEN_TIME_WINDOW>\"
+            }
+          ],
+          \"when\": [
+            {
+              \"predicate\": \"auth.identity.tier == \\\\\"<GROUP_NAME>-<TIER_LEVEL>-tier\\\\\"\"
+            }
+          ]
+        }
+      }
+    }
+  }'"
+    
+    print_curl_command \
+        "STEP 3: CREATE TOKEN RATE LIMIT POLICY" \
+        "Creates a TokenRateLimitPolicy that limits AI tokens consumed per time window for the group tier" \
+        "$token_rate_limit_cmd"
+    
+    echo -e "${YELLOW}Token-specific placeholders:${NC}"
+    echo "• <TOKENS_PER_WINDOW>: Number of AI tokens allowed (e.g., 100, 5000, 100000)"
+    echo "• <TOKEN_TIME_WINDOW>: Time window for tokens (e.g., '1m', '5m', '1h')"
+    echo ""
+    
+    # Step 4: Restart MaaS API
+    local restart_cmd="curl -X PATCH \\\\
+  -H \"Authorization: Bearer \$(oc whoami -t)\" \\\\
+  -H \"Content-Type: application/strategic-merge-patch+json\" \\\\
+  -k \\\\
+  \"\$OPENSHIFT_SERVER/apis/apps/v1/namespaces/maas-api/deployments/maas-api\" \\\\
+  -d '{
+    \"spec\": {
+      \"template\": {
+        \"metadata\": {
+          \"annotations\": {
+            \"kubectl.kubernetes.io/restartedAt\": \"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"
+          }
+        }
+      }
+    }
+  }'"
+    
+    print_curl_command \
+        "STEP 4: RESTART MAAS API (REQUIRED)" \
+        "Restarts the MaaS API deployment to reload the new tier-to-group mapping configuration" \
+        "$restart_cmd"
+    
+    echo -e "${YELLOW}Example Values:${NC}"
+    echo "For a group 'acme' with 'dev' tier allowing 10 requests/2min and 1000 tokens/1min:"
+    echo "• GROUP_NAME: acme"
+    echo "• TIER_LEVEL: dev"
+    echo "• TIER_PRIORITY: 10"
+    echo "• REQUESTS_PER_WINDOW: 10"
+    echo "• TIME_WINDOW: 2m"
+    echo "• TOKENS_PER_WINDOW: 1000"
+    echo "• TOKEN_TIME_WINDOW: 1m"
+    echo ""
+    echo -e "${YELLOW}Post-deployment Steps:${NC}"
+    echo "1. Create the user group: oc adm groups new tier-acme-dev"
+    echo "2. Add users to the group: oc adm groups add-users tier-acme-dev user1 user2"
+    echo "3. Verify policies are applied: oc get ratelimitpolicies,tokenratelimitpolicies -n openshift-ingress"
+    echo "4. Monitor rate limiting: Check Kuadrant logs and metrics"
+    echo ""
+    echo -e "${RED}⚠️  IMPORTANT NOTES:${NC}"
+    echo "• Tier names must match exactly between all three resources"
+    echo "• MaaS API restart is required after tier mapping changes"
+    echo "• Users must be in the correct OpenShift group to get tier access"
+    echo "• Policies apply at the gateway level for all routes"
+    echo ""
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
+
 list_users_demo() {
     local curl_cmd="curl -X GET \\
   -H \"Authorization: Bearer \$(oc whoami -t)\" \\
@@ -554,6 +766,9 @@ main() {
                 ;;
             7)
                 query_model_inference_demo
+                ;;
+            8)
+                deploy_group_rate_limit_policies_demo
                 ;;
             [Xx])
                 echo -e "${GREEN}Thanks for using the OpenShift API Curl Cheatsheet!${NC}"
