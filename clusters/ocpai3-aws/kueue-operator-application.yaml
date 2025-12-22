@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kueue-operator
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/part-of: platform
+  annotations:
+    # Ensure this deploys after any future "cluster-basics" bundles if you add them.
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/bryonbaker/maas-experiments'
+    targetRevision: main
+    path: components/operators/kueue/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-kueue-operator
+  syncPolicy:
+    # Auto sync - changes will automatically sync from Git
+    automated:
+      enabled: true       # Enables automated sync
+      prune: true         # Auto-prune deleted resources
+      selfHeal: true      # Auto-correct manual cluster changes
+    syncOptions:
+      - CreateNamespace=true
+      # Optional but useful in day-2:
+      - ApplyOutOfSyncOnly=true
+  revisionHistoryLimit: 5
