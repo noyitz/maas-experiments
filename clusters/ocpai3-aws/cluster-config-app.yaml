@@ -19,15 +19,13 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-monitoring
-  syncPolicy:
-    # Manual sync - changes require manual sync from Argo CD UI/CLI
+  syncPolicy:    # Auto sync - changes will automatically sync from Git
     automated:
-      enabled: false      # Explicitly disables automated sync
-      prune: false        # Don't auto-prune deleted resources
-      selfHeal: false     # Don't auto-correct manual cluster changes
+      enabled: true       # Enables automated sync
+      prune: true         # Auto-prune deleted resources
+      selfHeal: true      # Auto-correct manual cluster changes
     syncOptions:
       - CreateNamespace=true
       # Optional but useful in day-2:
       - ApplyOutOfSyncOnly=true
-  preserveResourcesOnDeletion: false
   revisionHistoryLimit: 5
