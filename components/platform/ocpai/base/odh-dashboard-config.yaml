@@ -1,0 +1,34 @@
+apiVersion: opendatahub.io/v1alpha
+kind: OdhDashboardConfig
+metadata:
+ annotations:
+   internal.config.kubernetes.io/previousKinds: OdhDashboardConfig
+   internal.config.kubernetes.io/previousNames: odh-dashboard-config
+   internal.config.kubernetes.io/previousNamespaces: default
+   platform.opendatahub.io/instance.generation: '1'
+   platform.opendatahub.io/instance.name: default-dashboard
+   platform.opendatahub.io/instance.uid: ef261927-1e5e-4410-a906-746029c4436e
+   platform.opendatahub.io/type: OpenShift AI Self-Managed
+ name: odh-dashboard-config
+ namespace: redhat-ods-applications
+ labels:
+   app: rhods-dashboard
+   app.kubernetes.io/part-of: rhods-dashboard
+   app.opendatahub.io/rhods-dashboard: 'true'
+   platform.opendatahub.io/part-of: dashboard
+spec:
+ dashboardConfig:
+   disableTracking: false
+   disableModelRegistry: false  ## 👈👈 Enabled by us
+   disableModelCatalog: false  ## 👈👈 Enabled by us
+   disableKServeMetrics: false  ## 👈👈 Enabled by us
+   genAiStudio: true  ## 👈👈 Enabled by us
+   modelAsService: true  ## 👈👈 Enabled by us
+   disableLMEval: false  ## 👈👈 Enabled by us
+ hardwareProfileOrder: []
+ notebookController:
+   enabled: true
+   notebookNamespace: rhods-notebooks
+   pvcSize: 20Gi
+ templateDisablement: []
+ templateOrder: []
