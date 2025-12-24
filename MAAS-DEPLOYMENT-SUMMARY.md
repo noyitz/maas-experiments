@@ -49,6 +49,8 @@ Groups are used to manage permissions and tier access for MaaS functionality.
 | **acme-inc-users** | acme-user1, acme-user2 | Acme Inc company users |
 | **ethan-group-users** | nagarajan-ethan | Ethan Group company users |
 
+Note: If you add a new user to the cluster, you will need to add them to the `maas-users` group so they can access the API.
+
 ### Group Permissions
 
 #### maas-users
