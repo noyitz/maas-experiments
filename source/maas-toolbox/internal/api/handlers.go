@@ -15,6 +15,7 @@
 package api
 
 import (
+	"errors"
 	"log"
 	"maas-toolbox/internal/models"
 	"maas-toolbox/internal/service"
@@ -25,8 +26,8 @@ import (
 
 // TierHandler handles HTTP requests for tier management
 type TierHandler struct {
-	service              *service.TierService
-	llmServiceService    *service.LLMInferenceServiceService
+	service           *service.TierService
+	llmServiceService *service.LLMInferenceServiceService
 }
 
 // NewTierHandler creates a new TierHandler instance
@@ -77,12 +78,22 @@ func (h *TierHandler) CreateTier(c *gin.Context) {
 	}
 
 	if err := h.service.CreateTier(&tier); err != nil {
-		switch err {
-		case models.ErrTierAlreadyExists:
-			c.JSON(http.StatusConflict, ErrorResponse{Error: err.Error()})
-		case models.ErrTierNameRequired, models.ErrTierDescriptionRequired, models.ErrTierLevelInvalid, models.ErrInvalidKubernetesName, models.ErrGroupNotFoundInCluster:
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		default:
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierAlreadyExists) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "tier already exists"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
+		} else if errors.Is(err, models.ErrTierNameRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier name is required"})
+		} else if errors.Is(err, models.ErrTierDescriptionRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier description is required"})
+		} else if errors.Is(err, models.ErrTierLevelInvalid) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier level must be non-negative"})
+		} else if errors.Is(err, models.ErrInvalidKubernetesName) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid kubernetes name format"})
+		} else if errors.Is(err, models.ErrGroupNotFoundInCluster) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "group not found in cluster"})
+		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
 		return
@@ -104,7 +115,12 @@ func (h *TierHandler) GetTiers(c *gin.Context) {
 	tiers, err := h.service.GetTiers()
 	if err != nil {
 		log.Printf("GET /api/v1/tiers - Error: %v", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		}
 		return
 	}
 
@@ -126,8 +142,11 @@ func (h *TierHandler) GetTier(c *gin.Context) {
 	name := c.Param("name")
 	tier, err := h.service.GetTier(name)
 	if err != nil {
-		if err == models.ErrTierNotFound {
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
@@ -171,14 +190,22 @@ func (h *TierHandler) UpdateTier(c *gin.Context) {
 	updates.Name = name
 
 	if err := h.service.UpdateTier(name, &updates); err != nil {
-		switch err {
-		case models.ErrTierNotFound:
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		case models.ErrTierNameImmutable:
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		case models.ErrTierDescriptionRequired, models.ErrTierLevelInvalid, models.ErrInvalidKubernetesName, models.ErrGroupNotFoundInCluster:
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		default:
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
+		} else if errors.Is(err, models.ErrTierNameImmutable) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier name cannot be changed"})
+		} else if errors.Is(err, models.ErrTierDescriptionRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier description is required"})
+		} else if errors.Is(err, models.ErrTierLevelInvalid) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier level must be non-negative"})
+		} else if errors.Is(err, models.ErrInvalidKubernetesName) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid kubernetes name format"})
+		} else if errors.Is(err, models.ErrGroupNotFoundInCluster) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "group not found in cluster"})
+		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
 		return
@@ -206,8 +233,11 @@ func (h *TierHandler) UpdateTier(c *gin.Context) {
 func (h *TierHandler) DeleteTier(c *gin.Context) {
 	name := c.Param("name")
 	if err := h.service.DeleteTier(name); err != nil {
-		if err == models.ErrTierNotFound {
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
@@ -246,14 +276,20 @@ func (h *TierHandler) AddGroup(c *gin.Context) {
 	}
 
 	if err := h.service.AddGroup(tierName, req.Group); err != nil {
-		switch err {
-		case models.ErrTierNotFound:
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		case models.ErrGroupRequired, models.ErrInvalidKubernetesName, models.ErrGroupNotFoundInCluster:
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		case models.ErrGroupAlreadyExists:
-			c.JSON(http.StatusConflict, ErrorResponse{Error: err.Error()})
-		default:
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
+		} else if errors.Is(err, models.ErrGroupAlreadyExists) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "group already exists in tier"})
+		} else if errors.Is(err, models.ErrGroupRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "group name is required"})
+		} else if errors.Is(err, models.ErrInvalidKubernetesName) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid kubernetes name format"})
+		} else if errors.Is(err, models.ErrGroupNotFoundInCluster) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "group not found in cluster"})
+		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
 		return
@@ -285,14 +321,18 @@ func (h *TierHandler) RemoveGroup(c *gin.Context) {
 	groupName := c.Param("group")
 
 	if err := h.service.RemoveGroup(tierName, groupName); err != nil {
-		switch err {
-		case models.ErrTierNotFound:
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		case models.ErrGroupNotFound:
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		case models.ErrGroupRequired, models.ErrInvalidKubernetesName:
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		default:
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found"})
+		} else if errors.Is(err, models.ErrGroupNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "group not found in tier"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
+		} else if errors.Is(err, models.ErrGroupRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "group name is required"})
+		} else if errors.Is(err, models.ErrInvalidKubernetesName) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid kubernetes name format"})
+		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
 		return
@@ -322,8 +362,11 @@ func (h *TierHandler) GetTiersByGroup(c *gin.Context) {
 	groupName := c.Param("group")
 	tiers, err := h.service.GetTiersByGroup(groupName)
 	if err != nil {
-		if err == models.ErrInvalidKubernetesName {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrInvalidKubernetesName) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid kubernetes name format"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "configmap namespace not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		}
@@ -345,7 +388,7 @@ func (h *TierHandler) GetTiersByGroup(c *gin.Context) {
 // @Router       /tiers/{name}/llminferenceservices [get]
 func (h *TierHandler) GetLLMInferenceServicesByTier(c *gin.Context) {
 	tierName := c.Param("name")
-	
+
 	// Verify tier exists
 	_, err := h.service.GetTier(tierName)
 	if err != nil {
@@ -379,7 +422,7 @@ func (h *TierHandler) GetLLMInferenceServicesByTier(c *gin.Context) {
 // @Router       /groups/{group}/llminferenceservices [get]
 func (h *TierHandler) GetLLMInferenceServicesByGroup(c *gin.Context) {
 	groupName := c.Param("group")
-	
+
 	// Validate group name format
 	if err := models.ValidateGroupName(groupName); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -394,4 +437,112 @@ func (h *TierHandler) GetLLMInferenceServicesByGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, services)
+}
+
+// AnnotateLLMInferenceService handles POST /api/v1/llminferenceservices/annotate
+// @Summary      Annotate LLMInferenceService with a tier
+// @Description  Add a tier annotation to an LLMInferenceService instance. The tier must exist before annotating.
+// @Tags         llminferenceservices
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.AnnotateRequest  true  "Annotation request with namespace, name, and tier"
+// @Success      200      {object}  map[string]string  "Successfully annotated"
+// @Failure      400      {object}  ErrorResponse  "Bad request - validation error"
+// @Failure      404      {object}  ErrorResponse  "Tier or LLMInferenceService not found"
+// @Failure      500      {object}  ErrorResponse  "Internal server error"
+// @Router       /llminferenceservices/annotate [post]
+func (h *TierHandler) AnnotateLLMInferenceService(c *gin.Context) {
+	var req models.AnnotateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Validate request
+	if err := req.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Annotate the service
+	if err := h.llmServiceService.AnnotateLLMInferenceServiceWithTier(req.Namespace, req.Name, req.Tier); err != nil {
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrTierNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found"})
+		} else if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "namespace not found"})
+		} else if errors.Is(err, models.ErrLLMInferenceServiceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "llminferenceservice not found"})
+		} else if errors.Is(err, models.ErrNamespaceRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "namespace is required"})
+		} else if errors.Is(err, models.ErrNameRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required"})
+		} else if errors.Is(err, models.ErrTierNameRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier name is required"})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Successfully annotated LLMInferenceService",
+		"namespace": req.Namespace,
+		"name":      req.Name,
+		"tier":      req.Tier,
+	})
+}
+
+// RemoveTierFromLLMInferenceService handles DELETE /api/v1/llminferenceservices/annotate
+// @Summary      Remove tier from LLMInferenceService
+// @Description  Remove a tier annotation from an LLMInferenceService instance.
+// @Tags         llminferenceservices
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.RemoveTierRequest  true  "Remove tier request with namespace, name, and tier"
+// @Success      200      {object}  map[string]string  "Successfully removed tier"
+// @Failure      400      {object}  ErrorResponse  "Bad request - validation error"
+// @Failure      404      {object}  ErrorResponse  "Namespace, LLMInferenceService, or tier annotation not found"
+// @Failure      500      {object}  ErrorResponse  "Internal server error"
+// @Router       /llminferenceservices/annotate [delete]
+func (h *TierHandler) RemoveTierFromLLMInferenceService(c *gin.Context) {
+	var req models.RemoveTierRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Validate request
+	if err := req.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	// Remove the tier
+	if err := h.llmServiceService.RemoveTierFromLLMInferenceService(req.Namespace, req.Name, req.Tier); err != nil {
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrNamespaceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "namespace not found"})
+		} else if errors.Is(err, models.ErrLLMInferenceServiceNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "llminferenceservice not found"})
+		} else if errors.Is(err, models.ErrTierNotFoundInAnnotation) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "tier not found in service annotation"})
+		} else if errors.Is(err, models.ErrNamespaceRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "namespace is required"})
+		} else if errors.Is(err, models.ErrNameRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required"})
+		} else if errors.Is(err, models.ErrTierNameRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "tier name is required"})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Successfully removed tier from LLMInferenceService",
+		"namespace": req.Namespace,
+		"name":      req.Name,
+		"tier":      req.Tier,
+	})
 }

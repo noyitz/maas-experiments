@@ -57,6 +57,8 @@ func SetupRouter(tierService *service.TierService) *gin.Engine {
 		// LLMInferenceService routes
 		v1.GET("/tiers/:name/llminferenceservices", handler.GetLLMInferenceServicesByTier)
 		v1.GET("/groups/:group/llminferenceservices", handler.GetLLMInferenceServicesByGroup)
+		v1.POST("/llminferenceservices/annotate", handler.AnnotateLLMInferenceService)
+		v1.DELETE("/llminferenceservices/annotate", handler.RemoveTierFromLLMInferenceService)
 	}
 
 	// Health check endpoint

@@ -15,4 +15,24 @@ spec:
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: maas-toolbox-swagger
+  namespace: maas-toolbox
+  labels:
+    app: maas-toolbox
+spec:
+  path: /swagger/index.html
+  to:
+    kind: Service
+    name: maas-toolbox
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
 

@@ -103,6 +103,12 @@ func main() {
 	log.Printf("Namespace: %s", namespace)
 	log.Printf("ConfigMap: %s", configMapName)
 
+	// Validate that the ConfigMap namespace exists
+	if err := tierStorage.ValidateNamespace(); err != nil {
+		log.Fatalf("ConfigMap namespace validation failed: %v", err)
+		os.Exit(1)
+	}
+
 	// Initialize service
 	tierService := service.NewTierService(tierStorage)
 

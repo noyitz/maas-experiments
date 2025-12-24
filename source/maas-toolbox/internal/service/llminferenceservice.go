@@ -132,3 +132,54 @@ func convertUnstructuredToLLMInferenceService(obj *unstructured.Unstructured) (*
 	}, nil
 }
 
+// AnnotateLLMInferenceServiceWithTier annotates an LLMInferenceService with a tier
+func (s *LLMInferenceServiceService) AnnotateLLMInferenceServiceWithTier(namespace, name, tierName string) error {
+	// Validate input parameters
+	if namespace == "" {
+		return models.ErrNamespaceRequired
+	}
+	if name == "" {
+		return models.ErrNameRequired
+	}
+	if tierName == "" {
+		return models.ErrTierNameRequired
+	}
+
+	// Check that the tier exists
+	_, err := s.tierService.GetTier(tierName)
+	if err != nil {
+		return err // Will be ErrTierNotFound if tier doesn't exist
+	}
+
+	// Update the annotation via storage layer
+	if err := storage.UpdateLLMInferenceServiceAnnotation(namespace, name, tierName); err != nil {
+		return fmt.Errorf("failed to update LLMInferenceService annotation: %w", err)
+	}
+
+	return nil
+}
+
+// RemoveTierFromLLMInferenceService removes a tier annotation from an LLMInferenceService
+func (s *LLMInferenceServiceService) RemoveTierFromLLMInferenceService(namespace, name, tierName string) error {
+	// Validate input parameters
+	if namespace == "" {
+		return models.ErrNamespaceRequired
+	}
+	if name == "" {
+		return models.ErrNameRequired
+	}
+	if tierName == "" {
+		return models.ErrTierNameRequired
+	}
+
+	// Note: We don't check if tier exists in tier config
+	// We just remove it from the annotation if present
+	// This allows cleanup of orphaned tier references
+
+	// Remove the annotation via storage layer
+	if err := storage.RemoveLLMInferenceServiceAnnotation(namespace, name, tierName); err != nil {
+		return fmt.Errorf("failed to remove tier from LLMInferenceService annotation: %w", err)
+	}
+
+	return nil
+}

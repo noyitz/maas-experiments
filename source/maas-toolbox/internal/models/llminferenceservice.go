@@ -54,3 +54,84 @@ func (l *LLMInferenceService) HasTier(tierName string) bool {
 	}
 	return false
 }
+
+// AnnotateRequest represents the request body for annotating an LLMInferenceService with a tier
+// @Description Request body for annotating an LLMInferenceService with a tier
+type AnnotateRequest struct {
+	Namespace string `json:"namespace" binding:"required" example:"acme-inc-models"` // Namespace where the LLMInferenceService is deployed
+	Name      string `json:"name" binding:"required" example:"acme-dev-model"`       // Name of the LLMInferenceService
+	Tier      string `json:"tier" binding:"required" example:"free"`                 // Tier name to add to the service
+}
+
+// Validate validates an AnnotateRequest
+func (a *AnnotateRequest) Validate() error {
+	if a.Namespace == "" {
+		return ErrNamespaceRequired
+	}
+	if a.Name == "" {
+		return ErrNameRequired
+	}
+	if a.Tier == "" {
+		return ErrTierNameRequired
+	}
+	return nil
+}
+
+// AddTierToList adds a tier to a list of tiers, avoiding duplicates
+func AddTierToList(tiers []string, tierName string) []string {
+	// Check if tier already exists
+	for _, tier := range tiers {
+		if tier == tierName {
+			return tiers // Already exists, return unchanged
+		}
+	}
+	// Add the new tier
+	return append(tiers, tierName)
+}
+
+// FormatTiersAnnotation converts a slice of tier names to JSON string for annotation
+func FormatTiersAnnotation(tiers []string) (string, error) {
+	if len(tiers) == 0 {
+		return "[]", nil
+	}
+	data, err := json.Marshal(tiers)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal tiers: %w", err)
+	}
+	return string(data), nil
+}
+
+// RemoveTierFromList removes a tier from a list of tiers
+// Returns the updated list and a boolean indicating if the tier was found
+func RemoveTierFromList(tiers []string, tierName string) ([]string, bool) {
+	for i, tier := range tiers {
+		if tier == tierName {
+			// Found it - remove by creating new slice without this element
+			return append(tiers[:i], tiers[i+1:]...), true
+		}
+	}
+	// Not found
+	return tiers, false
+}
+
+// RemoveTierRequest represents the request body for removing a tier annotation
+// @Description Request body for removing a tier from an LLMInferenceService
+type RemoveTierRequest struct {
+	Namespace string `json:"namespace" binding:"required" example:"acme-inc-models"` // Namespace where the LLMInferenceService is deployed
+	Name      string `json:"name" binding:"required" example:"acme-dev-model"`       // Name of the LLMInferenceService
+	Tier      string `json:"tier" binding:"required" example:"free"`                 // Tier name to remove from the service
+}
+
+// Validate validates a RemoveTierRequest
+func (r *RemoveTierRequest) Validate() error {
+	if r.Namespace == "" {
+		return ErrNamespaceRequired
+	}
+	if r.Name == "" {
+		return ErrNameRequired
+	}
+	if r.Tier == "" {
+		return ErrTierNameRequired
+	}
+	return nil
+}

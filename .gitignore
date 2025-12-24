@@ -1,2 +1,4 @@
 *.code-workspace
 launch.json
+source/maas-toolbox/docs/swagger.yaml
+source/maas-toolbox/docs/swagger.json

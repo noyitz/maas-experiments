@@ -1,24 +1,6 @@
+# ###############################
 # Define the htpasswd-based users
-
-apiVersion: user.openshift.io/v1
-kind: User
-metadata:
-  name: user1
-groups: null
-identities:
-- local-htpasswd:user1
-
---- 
-
-apiVersion: user.openshift.io/v1
-kind: User
-metadata:
-  name: user2
-groups: null
-identities:
-- local-htpasswd:user2
-
---- 
+# ###############################
 
 apiVersion: user.openshift.io/v1
 kind: User
@@ -28,56 +10,81 @@ groups: null
 identities:
 - local-htpasswd:acme-user1
 
+apiVersion: user.openshift.io/v1
+kind: User
+metadata:
+  name: acme-user2
+groups: null
+identities:
+- local-htpasswd:acme-user1
+
 ---
 
+# #############################################
 # Establish the group membership for all users.
+# #############################################
 
+# Define group for MaaS users which is used with the CLusterRoleBindings to give the correct cluster permissions
 apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
-  name: tier-redhat-users
-users: [bryonbaker, noyitz]
+  name: maas-users
+users: [bryonbaker, noyitz, bartoszmajsak, butler54, nagarajan-ethan, acme-user1, acme-user2]
 
 ---
 
-# Define groups for developers in Acme Inc
+# This group is used to give users access to the "serverless" models.
+# NOTE: The membership is the same as for "maas-users" so this group could probably be replace by 
+# the "maas-users" group
 apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
-  name: tier-acme-dev-users
-users: [acme-user1, user2]
+  name: serverless
+users: [bryonbaker, noyitz, bartoszmajsak, butler54, nagarajan-ethan, acme-user1, acme-user2]
+
+# Users from the Red Hat company
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: redhat-users
+users: [bryonbaker, noyitz, bartoszmajsak, butler54]
 
 ---
 
-# Define groups for production users in Acme Inc.
+# Users from Acme Inc company
 apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
-  name: tier-acme-prod-users
-users: [acme-user1, user1]
+  name: acme-inc-users
+users: [acme-user1, acme-user2]
 
---- 
+---
 
+# Define group for Ethan Group company
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: ethan-group-users
+users: [nagarajan-ethan]
+
+---
+
+# #############################################################################################
 # Define the Cluster Role Bindings for the groups so they access the cluster to get the api key
+# #############################################################################################
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: multi-user-view-access
+  name: group-view-access
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: view
 subjects:
 - apiGroup: rbac.authorization.k8s.io
-  kind: User  
-  name: user1
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: user2
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: acme-user1
+  kind: Group
+  name: maas-users
 
 ---
 
@@ -95,18 +102,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: ingress-config-viewer-user1
+  name: group-ingress-viewer
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: ingress-config-viewer
 subjects:
-- kind: User
+- kind: Group
   apiGroup: rbac.authorization.k8s.io
-  name: user1
-- kind: User
-  apiGroup: rbac.authorization.k8s.io
-  name: user2
-- kind: User
-  apiGroup: rbac.authorization.k8s.io
-  name: acme-user1
+  name: maas-users

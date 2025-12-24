@@ -55,10 +55,33 @@ func NewK8sTierStorage(client kubernetes.Interface, namespace, configMap string)
 	}
 }
 
+// ValidateNamespace checks if the configured namespace exists
+func (k *K8sTierStorage) ValidateNamespace() error {
+	exists, err := NamespaceExists(k.Namespace)
+	if err != nil {
+		return fmt.Errorf("failed to check namespace %s: %w", k.Namespace, err)
+	}
+	if !exists {
+		return fmt.Errorf("namespace %s not found - ensure it exists before starting the application", k.Namespace)
+	}
+	log.Printf("Validated that namespace %s exists", k.Namespace)
+	return nil
+}
+
 // Load retrieves the tier configuration from Kubernetes ConfigMap
 func (k *K8sTierStorage) Load() (*models.TierConfig, error) {
 	ctx := context.Background()
 	log.Printf("Loading ConfigMap: namespace=%s, name=%s", k.Namespace, k.ConfigMap)
+
+	// Check if namespace exists first
+	nsExists, err := NamespaceExists(k.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify namespace %s: %w", k.Namespace, err)
+	}
+	if !nsExists {
+		log.Printf("Namespace %s not found", k.Namespace)
+		return nil, models.ErrNamespaceNotFound
+	}
 
 	// Get ConfigMap from Kubernetes API
 	cm, err := k.Client.CoreV1().ConfigMaps(k.Namespace).Get(ctx, k.ConfigMap, metav1.GetOptions{})
@@ -110,6 +133,16 @@ func getMapKeys(m map[string]string) []string {
 // Save persists the tier configuration to Kubernetes ConfigMap
 func (k *K8sTierStorage) Save(config *models.TierConfig) error {
 	ctx := context.Background()
+
+	// Check if namespace exists first
+	nsExists, err := NamespaceExists(k.Namespace)
+	if err != nil {
+		return fmt.Errorf("failed to verify namespace %s: %w", k.Namespace, err)
+	}
+	if !nsExists {
+		log.Printf("Namespace %s not found", k.Namespace)
+		return models.ErrNamespaceNotFound
+	}
 
 	// Marshal tiers to YAML string with 2-space indentation
 	var tiersBuffer bytes.Buffer
@@ -330,4 +363,258 @@ func getName(obj *unstructured.Unstructured) string {
 func getNamespace(obj *unstructured.Unstructured) string {
 	namespace, _, _ := unstructured.NestedString(obj.Object, "metadata", "namespace")
 	return namespace
+}
+
+// NamespaceExists checks if a namespace exists in the cluster
+func NamespaceExists(namespace string) (bool, error) {
+	ctx := context.Background()
+
+	// Get REST config
+	config, err := getRESTConfig()
+	if err != nil {
+		return false, fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	// Create clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return false, fmt.Errorf("failed to create clientset: %w", err)
+	}
+
+	// Try to get the namespace
+	_, err = clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check namespace: %w", err)
+	}
+
+	return true, nil
+}
+
+// GetLLMInferenceService retrieves a specific LLMInferenceService by namespace and name
+func GetLLMInferenceService(namespace, name string) (*unstructured.Unstructured, error) {
+	ctx := context.Background()
+
+	// First check if namespace exists
+	nsExists, err := NamespaceExists(namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify namespace: %w", err)
+	}
+	if !nsExists {
+		log.Printf("Namespace %s not found", namespace)
+		return nil, models.ErrNamespaceNotFound
+	}
+
+	// Get REST config
+	config, err := getRESTConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	// Create dynamic client
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	// Define LLMInferenceService resource
+	llmResource := schema.GroupVersionResource{
+		Group:    "serving.kserve.io",
+		Version:  "v1alpha1",
+		Resource: "llminferenceservices",
+	}
+
+	// Get the specific LLMInferenceService
+	service, err := dynamicClient.Resource(llmResource).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Printf("LLMInferenceService %s/%s not found", namespace, name)
+			return nil, models.ErrLLMInferenceServiceNotFound
+		}
+		log.Printf("Error getting LLMInferenceService %s/%s: %v", namespace, name, err)
+		return nil, fmt.Errorf("failed to get LLMInferenceService: %w", err)
+	}
+
+	log.Printf("Found LLMInferenceService %s/%s", namespace, name)
+	return service, nil
+}
+
+// UpdateLLMInferenceServiceAnnotation updates the tier annotation on an LLMInferenceService
+func UpdateLLMInferenceServiceAnnotation(namespace, name, tierName string) error {
+	ctx := context.Background()
+
+	// First check if namespace exists
+	nsExists, err := NamespaceExists(namespace)
+	if err != nil {
+		return fmt.Errorf("failed to verify namespace: %w", err)
+	}
+	if !nsExists {
+		log.Printf("Namespace %s not found", namespace)
+		return models.ErrNamespaceNotFound
+	}
+
+	// Get REST config
+	config, err := getRESTConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	// Create dynamic client
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	// Define LLMInferenceService resource
+	llmResource := schema.GroupVersionResource{
+		Group:    "serving.kserve.io",
+		Version:  "v1alpha1",
+		Resource: "llminferenceservices",
+	}
+
+	// Get the service
+	service, err := dynamicClient.Resource(llmResource).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return models.ErrLLMInferenceServiceNotFound
+		}
+		return fmt.Errorf("failed to get LLMInferenceService: %w", err)
+	}
+
+	// Extract existing annotations
+	annotations, found, err := unstructured.NestedStringMap(service.Object, "metadata", "annotations")
+	if err != nil {
+		return fmt.Errorf("failed to extract annotations: %w", err)
+	}
+	if !found || annotations == nil {
+		annotations = make(map[string]string)
+	}
+
+	// Parse existing tiers
+	var existingTiers []string
+	if tiersAnnotation, exists := annotations[models.TierAnnotationKey]; exists && tiersAnnotation != "" {
+		existingTiers, err = models.ParseTiersFromAnnotation(tiersAnnotation)
+		if err != nil {
+			log.Printf("Warning: failed to parse existing tiers annotation, starting fresh: %v", err)
+			existingTiers = []string{}
+		}
+	}
+
+	// Add the new tier (avoiding duplicates)
+	updatedTiers := models.AddTierToList(existingTiers, tierName)
+
+	// Format tiers as JSON
+	tiersJSON, err := models.FormatTiersAnnotation(updatedTiers)
+	if err != nil {
+		return fmt.Errorf("failed to format tiers annotation: %w", err)
+	}
+
+	// Update the annotation
+	annotations[models.TierAnnotationKey] = tiersJSON
+	if err := unstructured.SetNestedStringMap(service.Object, annotations, "metadata", "annotations"); err != nil {
+		return fmt.Errorf("failed to set annotations: %w", err)
+	}
+
+	// Update the resource
+	_, err = dynamicClient.Resource(llmResource).Namespace(namespace).Update(ctx, service, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update LLMInferenceService: %w", err)
+	}
+
+	log.Printf("Successfully updated LLMInferenceService %s/%s with tier %s", namespace, name, tierName)
+	return nil
+}
+
+// RemoveLLMInferenceServiceAnnotation removes a tier annotation from an LLMInferenceService
+func RemoveLLMInferenceServiceAnnotation(namespace, name, tierName string) error {
+	ctx := context.Background()
+
+	// First check if namespace exists
+	nsExists, err := NamespaceExists(namespace)
+	if err != nil {
+		return fmt.Errorf("failed to verify namespace: %w", err)
+	}
+	if !nsExists {
+		log.Printf("Namespace %s not found", namespace)
+		return models.ErrNamespaceNotFound
+	}
+
+	// Get REST config
+	config, err := getRESTConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	// Create dynamic client
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	// Define LLMInferenceService resource
+	llmResource := schema.GroupVersionResource{
+		Group:    "serving.kserve.io",
+		Version:  "v1alpha1",
+		Resource: "llminferenceservices",
+	}
+
+	// Get the service
+	service, err := dynamicClient.Resource(llmResource).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return models.ErrLLMInferenceServiceNotFound
+		}
+		return fmt.Errorf("failed to get LLMInferenceService: %w", err)
+	}
+
+	// Extract existing annotations
+	annotations, found, err := unstructured.NestedStringMap(service.Object, "metadata", "annotations")
+	if err != nil {
+		return fmt.Errorf("failed to extract annotations: %w", err)
+	}
+	if !found || annotations == nil {
+		// No annotations at all - tier can't exist
+		return models.ErrTierNotFoundInAnnotation
+	}
+
+	// Parse existing tiers
+	tiersAnnotation, exists := annotations[models.TierAnnotationKey]
+	if !exists || tiersAnnotation == "" {
+		// No tiers annotation - tier can't exist
+		return models.ErrTierNotFoundInAnnotation
+	}
+
+	existingTiers, err := models.ParseTiersFromAnnotation(tiersAnnotation)
+	if err != nil {
+		return fmt.Errorf("failed to parse tiers annotation: %w", err)
+	}
+
+	// Remove the tier
+	updatedTiers, found := models.RemoveTierFromList(existingTiers, tierName)
+	if !found {
+		return models.ErrTierNotFoundInAnnotation
+	}
+
+	// Format tiers as JSON
+	tiersJSON, err := models.FormatTiersAnnotation(updatedTiers)
+	if err != nil {
+		return fmt.Errorf("failed to format tiers annotation: %w", err)
+	}
+
+	// Update the annotation
+	annotations[models.TierAnnotationKey] = tiersJSON
+	if err := unstructured.SetNestedStringMap(service.Object, annotations, "metadata", "annotations"); err != nil {
+		return fmt.Errorf("failed to set annotations: %w", err)
+	}
+
+	// Update the resource
+	_, err = dynamicClient.Resource(llmResource).Namespace(namespace).Update(ctx, service, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update LLMInferenceService: %w", err)
+	}
+
+	log.Printf("Successfully removed tier %s from LLMInferenceService %s/%s", tierName, namespace, name)
+	return nil
 }
