@@ -8,15 +8,6 @@ metadata:
   namespace: openshift-ingress
 spec:
   limits:
-    enterprise-user-tokens:
-      counters:
-        - expression: auth.identity.userid
-      rates:
-        - limit: 100000
-          window: 1m
-      when:
-        - predicate: |
-            auth.identity.tier == "enterprise"
     free-user-tokens:
       counters:
         - expression: auth.identity.userid
@@ -26,15 +17,6 @@ spec:
       when:
         - predicate: |
             auth.identity.tier == "free"
-    premium-user-tokens:
-      counters:
-        - expression: auth.identity.userid
-      rates:
-        - limit: 50000
-          window: 1m
-      when:
-        - predicate: |
-            auth.identity.tier == "premium"
   targetRef:
     group: gateway.networking.k8s.io
     kind: Gateway

@@ -14,24 +14,24 @@ metadata:
     app.kubernetes.io/part-of: model-as-a-service
     component: tier-mapping
 data:
-  tiers: |
-    # This is an example of using namespacing to implement a tier for developers in a specific company.
-    - name: redhat-users-tier
-      description: Tier used for users with access to the Red Hat series of models
-      level: 10
+  tiers: |-
+    - name: serverless
+      description: Tier for provisioning all serverless models
+      level: 1
       groups:
-      - tier-redhat-users    
-
-    # This is an example of using namespacing to implement a tier for developers in a specific company.
-    - name: acme-dev-users-tier
-      description: Tier used for users with access to the Acme Inc series of models
-      level: 10
+        - serverless-users
+    - name: acme-inc-dedicated
+      description: Tier for Acme Inc's Dedicated models
+      level: 50
       groups:
-      - tier-acme-dev-users
-
-    # This is an example of using namespacing to implement a tier for production users in a specific company.
-    - name: acme-prod-users-tier
-      description: Tier used for users with access to the Acme Inc series of models
-      level: 20
+        - acme-inc-users
+    - name: red-hat-dedicated
+      description: Tier for Red Hat's Dedicated models
+      level: 50
       groups:
-      - tier-acme-prod-users
+        - red-hat-users
+    - name: ethan-group-dedicated
+      description: Tier for Ethan Group's Dedicated models
+      level: 50
+      groups:
+        - ethan-group-users

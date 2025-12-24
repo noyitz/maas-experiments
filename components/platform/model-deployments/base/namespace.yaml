@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: serverless-models
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: acme-inc-models
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ethan-group-models
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: red-hat-models
