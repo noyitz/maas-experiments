@@ -41,7 +41,7 @@ users: [bryonbaker, noyitz, bartoszmajsak, butler54, nagarajan-ethan, acme-user1
 apiVersion: user.openshift.io/v1
 kind: Group
 metadata:
-  name: serverless
+  name: serverless-users
 users: [bryonbaker, noyitz, bartoszmajsak, butler54, nagarajan-ethan, acme-user1, acme-user2]
 
 ---
