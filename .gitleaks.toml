@@ -4,5 +4,5 @@
   paths = [
     "components/platform/users/files/users.htpasswd",
     "components/platform/users/base/htpass-secret.yaml",
-    "components/app/keycloak/admin-secret.yaml"
+    "components/apps/keycloak/base/admin-secret.yaml"
   ]
