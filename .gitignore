@@ -1,5 +1,14 @@
+# VSCode workspace files
 *.code-workspace
 launch.json
-source/maas-toolbox/docs/swagger.yaml
-source/maas-toolbox/docs/swagger.json
-source/client-example/golang-client/ocp-lister
+
+# Generic binaries
+*.o
+*.a
+*.so
+*.exe
+**/bin/*
+
+# Application-specific files
+**/swagger.yaml
+**/swagger.json
