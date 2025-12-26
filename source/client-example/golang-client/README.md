@@ -32,7 +32,7 @@ Set the required environment variables and run the application:
 ```bash
 export USER="myuser"
 export PASSWORD="mypassword"
-export SERVER="https://api.sno.bakerapps.net:6443"
+export SERVER="https://api.ocp.example.com:6443"
 
 ./ocp-lister
 ```
@@ -40,19 +40,19 @@ export SERVER="https://api.sno.bakerapps.net:6443"
 Or run in a single command:
 
 ```bash
-USER=myuser PASSWORD=mypassword SERVER=https://api.sno.bakerapps.net:6443 ./ocp-lister
+USER=myuser PASSWORD=mypassword SERVER=https://api.ocp.example.com:6443 ./ocp-lister
 ```
 
 ## Environment Variables
 
 - `USER` (required): OpenShift username
 - `PASSWORD` (required): OpenShift password
-- `SERVER` (required): OpenShift API server URL (e.g., `https://api.sno.bakerapps.net:6443`)
+- `SERVER` (required): OpenShift API server URL (e.g., `https://api.ocp.example.com:6443`)
 
 ## Example Output
 
 ```
-Connecting to OpenShift cluster at https://api.sno.bakerapps.net:6443...
+Connecting to OpenShift cluster at https://api.ocp.example.com:6443...
 Successfully authenticated!
 Retrieving projects...
 

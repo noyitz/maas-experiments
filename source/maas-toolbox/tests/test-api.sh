@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# Test script for Tier-to-Group Admin API
+# Test script for MaaS Toolbox API
 # Tests all CRUD operations and displays results
 #
 # Usage:
-#   ./test-api.sh [BASE_URL]
-#   ./test-api.sh https://tier-to-group-admin-maas-dev.apps.sno.bakerapps.net
-#   BASE_URL=https://example.com ./test-api.sh
+#   ./test-api.sh [MAAS-TOOLBOX_ROUTE_URL]
+#   BASE_URL= https://maas-toolbox-maas-toolbox.apps.ocp.domain.com ./test-api.sh
 
 # Get base URL from command line argument or environment variable, default to localhost
 if [ -n "$1" ]; then
@@ -178,7 +177,7 @@ if ! curl -s -f -k "${BASE_URL}/health" > /dev/null 2>&1; then
     echo ""
     echo "Usage:"
     echo "  ./test-api.sh [BASE_URL]"
-    echo "  ./test-api.sh https://tier-to-group-admin-maas-dev.apps.sno.bakerapps.net"
+    echo "  ./test-api.sh https://maas-toolbox-maas-dev.apps.ocp.example.com"
     echo "  BASE_URL=https://example.com ./test-api.sh"
     exit 1
 fi
