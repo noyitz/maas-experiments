@@ -618,3 +618,82 @@ func RemoveLLMInferenceServiceAnnotation(namespace, name, tierName string) error
 	log.Printf("Successfully removed tier %s from LLMInferenceService %s/%s", tierName, namespace, name)
 	return nil
 }
+
+// GetUserGroups retrieves all groups that a user belongs to in the OpenShift cluster.
+// It returns a list of group names where the user appears in the users list.
+// The special system:authenticated group is always included for any non-empty username.
+func GetUserGroups(username string) ([]string, error) {
+	if username == "" {
+		return nil, models.ErrUserRequired
+	}
+
+	ctx := context.Background()
+
+	// Get REST config
+	config, err := getRESTConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	// Create dynamic client for OpenShift resources
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	// Define Group resource
+	groupResource := schema.GroupVersionResource{
+		Group:    "user.openshift.io",
+		Version:  "v1",
+		Resource: "groups",
+	}
+
+	// List all groups
+	groupList, err := dynamicClient.Resource(groupResource).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		log.Printf("Error listing groups: %v", err)
+		return nil, fmt.Errorf("failed to list groups: %w", err)
+	}
+
+	// Collect groups where the user is a member
+	var userGroups []string
+	userFound := false
+
+	// Check each group for the user
+	for _, group := range groupList.Items {
+		groupName, _, _ := unstructured.NestedString(group.Object, "metadata", "name")
+
+		// Get users list from the group
+		users, found, err := unstructured.NestedStringSlice(group.Object, "users")
+		if err != nil {
+			log.Printf("Warning: failed to extract users from group %s: %v", groupName, err)
+			continue
+		}
+
+		if !found || users == nil {
+			// No users in this group
+			continue
+		}
+
+		// Check if username is in the users list
+		for _, user := range users {
+			if user == username {
+				userGroups = append(userGroups, groupName)
+				userFound = true
+				break
+			}
+		}
+	}
+
+	// If user was not found in any group, they don't exist
+	if !userFound {
+		log.Printf("User %s not found in any groups", username)
+		return nil, models.ErrUserNotFound
+	}
+
+	// User exists - add system:authenticated group for any authenticated user
+	userGroups = append(userGroups, SystemAuthenticatedGroup)
+
+	log.Printf("User %s belongs to %d groups: %v", username, len(userGroups), userGroups)
+	return userGroups, nil
+}

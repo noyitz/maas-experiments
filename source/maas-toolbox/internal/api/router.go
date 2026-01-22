@@ -54,6 +54,9 @@ func SetupRouter(tierService *service.TierService) *gin.Engine {
 		v1.DELETE("/tiers/:name/groups/:group", handler.RemoveGroup)
 		v1.GET("/groups/:group/tiers", handler.GetTiersByGroup)
 
+		// User routes
+		v1.GET("/users/:username/tiers", handler.GetTiersForUser)
+
 		// LLMInferenceService routes
 		v1.GET("/tiers/:name/llminferenceservices", handler.GetLLMInferenceServicesByTier)
 		v1.GET("/groups/:group/llminferenceservices", handler.GetLLMInferenceServicesByGroup)

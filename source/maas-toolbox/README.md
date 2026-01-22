@@ -59,7 +59,7 @@ oc apply -k yaml/
 
 ## API Endpoints
 
-Tier management endpoints are under `/api/v1/tiers`. Group query endpoints are under `/api/v1/groups`.
+Tier management endpoints are under `/api/v1/tiers`. Group query endpoints are under `/api/v1/groups`. User query endpoints are under `/api/v1/users`.
 
 ### Get the API URL
 
@@ -138,6 +138,38 @@ curl https://$ROUTE_URL/api/v1/groups/premium-users/tiers
 ```
 
 This endpoint returns an array of all tiers that include the specified group. If no tiers contain the group, an empty array is returned.
+
+### Get Tiers for User
+
+Retrieve all tiers that a user has access to based on their group memberships:
+
+```bash
+curl https://$ROUTE_URL/api/v1/users/bryonbaker/tiers
+```
+
+This endpoint returns an array of tiers the user can access, sorted by level (priority). Each tier includes:
+- Tier name, description, and level (priority)
+- List of groups the user belongs to that grant access to this tier
+
+Example response:
+```json
+[
+  {
+    "name": "standard",
+    "description": "Standard tier for authenticated users",
+    "level": 5,
+    "groups": ["system:authenticated"]
+  },
+  {
+    "name": "premium",
+    "description": "Premium tier with high priority",
+    "level": 10,
+    "groups": ["cluster-admins", "premium-users"]
+  }
+]
+```
+
+If the user is not found in the cluster, a 404 error is returned.
 
 ### Health Check
 

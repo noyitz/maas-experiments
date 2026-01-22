@@ -584,6 +584,56 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{username}/tiers": {
+            "get": {
+                "description": "Retrieve all tiers that a user has access to based on their group memberships. Returns tiers sorted by level (priority), including which groups grant access.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get tiers for a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of tiers the user has access to",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.UserTier"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - username required",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found in cluster",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -721,6 +771,38 @@ const docTemplate = `{
                     "description": "Tier name (immutable after creation)",
                     "type": "string",
                     "example": "free"
+                }
+            }
+        },
+        "models.UserTier": {
+            "description": "Tier information for a specific user, including which groups grant access",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Tier description",
+                    "type": "string",
+                    "example": "Premium tier with high priority"
+                },
+                "groups": {
+                    "description": "User's groups that grant access to this tier",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "cluster-admins",
+                        "premium-users"
+                    ]
+                },
+                "level": {
+                    "description": "Tier priority level (higher = higher priority)",
+                    "type": "integer",
+                    "example": 10
+                },
+                "name": {
+                    "description": "Tier name",
+                    "type": "string",
+                    "example": "premium"
                 }
             }
         }

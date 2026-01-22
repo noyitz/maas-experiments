@@ -29,6 +29,15 @@ type TierConfig struct {
 	Tiers []Tier `json:"tiers" yaml:"tiers"`
 }
 
+// UserTier represents a tier with user-specific information
+// @Description Tier information for a specific user, including which groups grant access
+type UserTier struct {
+	Name        string   `json:"name" example:"premium"`                               // Tier name
+	Description string   `json:"description" example:"Premium tier with high priority"` // Tier description
+	Level       int      `json:"level" example:"10"`                                   // Tier priority level (higher = higher priority)
+	Groups      []string `json:"groups" example:"cluster-admins,premium-users"`        // User's groups that grant access to this tier
+}
+
 // Validate validates a Tier struct
 func (t *Tier) Validate() error {
 	if t.Name == "" {

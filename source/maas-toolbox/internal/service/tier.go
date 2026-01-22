@@ -325,3 +325,66 @@ func (s *TierService) GetTiersByGroup(groupName string) ([]models.Tier, error) {
 
 	return matchingTiers, nil
 }
+
+// GetTiersForUser returns all tiers that a user has access to based on their group memberships.
+// The result includes which groups grant the user access to each tier, sorted by level (priority).
+func (s *TierService) GetTiersForUser(username string) ([]models.UserTier, error) {
+	// Validate username
+	if username == "" {
+		return nil, models.ErrUserRequired
+	}
+
+	// Get all groups the user belongs to
+	// This will return ErrUserNotFound if the user doesn't exist in any groups
+	userGroups, err := storage.GetUserGroups(username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user groups: %w", err)
+	}
+
+	// Load all tiers
+	config, err := s.storage.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Build a map of user's groups for fast lookup
+	userGroupsMap := make(map[string]bool)
+	for _, group := range userGroups {
+		userGroupsMap[group] = true
+	}
+
+	// Find tiers the user has access to and collect matching groups
+	var userTiers []models.UserTier
+	for _, tier := range config.Tiers {
+		var matchingGroups []string
+
+		// Check which of the tier's groups the user belongs to
+		for _, tierGroup := range tier.Groups {
+			if userGroupsMap[tierGroup] {
+				matchingGroups = append(matchingGroups, tierGroup)
+			}
+		}
+
+		// If user belongs to any of the tier's groups, include this tier
+		if len(matchingGroups) > 0 {
+			userTiers = append(userTiers, models.UserTier{
+				Name:        tier.Name,
+				Description: tier.Description,
+				Level:       tier.Level,
+				Groups:      matchingGroups,
+			})
+		}
+	}
+
+	// Sort tiers by level (ascending - lower level = lower priority)
+	// Using a simple bubble sort since the number of tiers is typically small
+	for i := 0; i < len(userTiers)-1; i++ {
+		for j := 0; j < len(userTiers)-i-1; j++ {
+			if userTiers[j].Level > userTiers[j+1].Level {
+				userTiers[j], userTiers[j+1] = userTiers[j+1], userTiers[j]
+			}
+		}
+	}
+
+	return userTiers, nil
+}

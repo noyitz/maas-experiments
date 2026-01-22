@@ -34,4 +34,6 @@ var (
 	ErrNamespaceRequired           = errors.New("namespace is required")
 	ErrNameRequired                = errors.New("name is required")
 	ErrTierNotFoundInAnnotation    = errors.New("tier not found in service annotation")
+	ErrUserRequired                = errors.New("username is required")
+	ErrUserNotFound                = errors.New("user not found in cluster")
 )

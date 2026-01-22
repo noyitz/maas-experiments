@@ -546,3 +546,42 @@ func (h *TierHandler) RemoveTierFromLLMInferenceService(c *gin.Context) {
 		"tier":      req.Tier,
 	})
 }
+
+// GetTiersForUser handles GET /api/v1/users/:username/tiers
+// @Summary      Get tiers for a user
+// @Description  Retrieve all tiers that a user has access to based on their group memberships. Returns tiers sorted by level (priority), including which groups grant access.
+// @Tags         users
+// @Produce      json
+// @Param        username  path      string  true  "Username"
+// @Success      200       {array}   models.UserTier  "List of tiers the user has access to"
+// @Failure      400       {object}  ErrorResponse  "Bad request - username required"
+// @Failure      404       {object}  ErrorResponse  "User not found in cluster"
+// @Failure      500       {object}  ErrorResponse  "Internal server error"
+// @Router       /users/{username}/tiers [get]
+func (h *TierHandler) GetTiersForUser(c *gin.Context) {
+	username := c.Param("username")
+	
+	log.Printf("GET /api/v1/users/%s/tiers - Request received from %s", username, c.ClientIP())
+
+	if username == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username is required"})
+		return
+	}
+
+	tiers, err := h.service.GetTiersForUser(username)
+	if err != nil {
+		log.Printf("GET /api/v1/users/%s/tiers - Error: %v", username, err)
+		// Use errors.Is() to properly check wrapped errors
+		if errors.Is(err, models.ErrUserRequired) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username is required"})
+		} else if errors.Is(err, models.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found in cluster"})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		}
+		return
+	}
+
+	log.Printf("GET /api/v1/users/%s/tiers - Returning %d tiers", username, len(tiers))
+	c.JSON(http.StatusOK, tiers)
+}
