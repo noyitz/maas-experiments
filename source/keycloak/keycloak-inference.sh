@@ -11,8 +11,8 @@ if [ -z "$CLIENT_SECRET" ]; then
     exit 1
 fi
 
-if [ -z "$USERNAME" ]; then
-    echo "ERROR: USERNAME environment variable is not set"
+if [ -z "$KEYCLOAK_USER" ]; then
+    echo "ERROR: KEYCLOAK_USER environment variable is not set"
     exit 1
 fi
 
@@ -23,7 +23,7 @@ fi
 
 # Get a token from Key Cloak to access the OpenShift cluster
 
-export KK_JWT=$(curl -d 'client_id=maas' -d "client_secret=${CLIENT_SECRET}" -d "username=${USERNAME}" -d "password=${PASSWORD}" -d 'grant_type=password' 'https://keycloak.apps.ethan-sno-kk.sandbox3469.opentlc.com/realms/maas-tenants/protocol/openid-connect/token' | jq -r '.access_token')
+export KK_JWT=$(curl -d 'client_id=maas' -d "client_secret=${CLIENT_SECRET}" -d "username=${KEYCLOAK_USER}" -d "password=${PASSWORD}" -d 'grant_type=password' 'https://keycloak.apps.ethan-sno-kk.sandbox3469.opentlc.com/realms/maas-tenants/protocol/openid-connect/token' | jq -r '.access_token')
 echo "Keycloak JWT: $KK_JWT"
 
 # Get cluster details
